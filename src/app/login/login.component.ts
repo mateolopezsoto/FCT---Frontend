@@ -1,17 +1,12 @@
-import { Component, signal, inject } from '@angular/core';
+// src/app/login/login.component.ts
+import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 import Swal from 'sweetalert2';
 
-interface LoginResponse {
-  message: string;
-  user: any;
-  access_token: string;
-}
-
 @Component({
-  selector: 'app-root',
+  selector: 'app-login',
   standalone: true,
   imports: [ReactiveFormsModule, RouterModule],
   templateUrl: './login.component.html',
@@ -19,10 +14,7 @@ interface LoginResponse {
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
-  private http = inject(HttpClient);
-  private router = inject(Router);
-
-  loading = signal<boolean>(false);
+  authService = inject(AuthService);
 
   loginForm = this.fb.group({
     correo: ['', [Validators.required, Validators.email]],
@@ -31,38 +23,28 @@ export class LoginComponent {
 
   async onLogin() {
     if (this.loginForm.invalid) return;
-    this.loading.set(true);
 
-    try {
-      // 1. Cookie CSRF
-      await this.http.get('http://reservas.test/sanctum/csrf-cookie', {
-        withCredentials: true
-      }).toPromise();
+    const credenciais = {
+      correo: this.loginForm.get('correo')?.value?.trim() || '',
+      contrasinal: this.loginForm.get('contrasinal')?.value || ''
+    };
 
-      // 2. Login
-      const res = await this.http.post<LoginResponse>(
-        'http://reservas.test/api/login',
-        this.loginForm.value,
-        { withCredentials: true }
-      ).toPromise();
-
-      if (res?.access_token) {
-        localStorage.setItem('access_token', res.access_token);
-        localStorage.setItem('user', JSON.stringify(res.user));
-
-        Swal.fire('Benvido!', `Ola, ${res.user.nome}!`, 'success');
-        this.router.navigate(['/dashboard']);
-      }
-    } catch (err: any) {
-      const msg = err.error?.message || 'Credenciais incorrectas';
-      Swal.fire('Erro', msg, 'error');
-    } finally {
-      this.loading.set(false);
-    }
+    await this.authService.login(credenciais);
+    // O servizo xa:
+    // - fai o CSRF
+    // - fai o login
+    // - garda o usuario
+    // - amosa o SweetAlert
+    // - redirixe ao dashboard si todo va bien
+    // - amosa erro se falla
   }
 
   openForgotPassword(e: Event) {
     e.preventDefault();
-    Swal.fire('Esquecín o contrasinal', 'Contacta con admin@concello.gal', 'info');
+    Swal.fire(
+      'Esquecín o contrasinal',
+      'Contacta con <strong>admin@concello.gal</strong>',
+      'info'
+    );
   }
 }

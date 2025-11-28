@@ -27,9 +27,9 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-primary" [disabled]="loginForm.invalid || loading()">
-        <i class="fas fa-spinner fa-spin" *ngIf="loading()"></i>
-        {{ loading() ? 'Entrando...' : 'Iniciar sesión' }}
+      <button type="submit" class="btn-primary" [disabled]="authService.loading()">
+        <i class="fas fa-spinner fa-spin" *ngIf="authService.loading()"></i>
+        {{ authService.loading() ? 'Entrando...' : 'Iniciar sesión' }}
       </button>
 
       <div class="actions">
