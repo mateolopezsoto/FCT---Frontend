@@ -1,0 +1,38 @@
+<div class="container">
+  <header>
+    <img src="/assets/logo_principal.png" alt="Logo" class="logo">
+    <div class="top-buttons">
+      <button routerLink="/mis-reservas">As miñas reservas</button>
+      <button routerLink="/perfil">Perfil</button>
+      <button (click)="authService.logout()" class="logout">Pechar sesión</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="filtros">
+      <label>Tipo de instalación</label>
+      <select [(ngModel)]="filtroTipo" (ngModelChange)="filtrar()">
+        <option value="">Todos</option>
+        <option *ngFor="let t of reservaService.tipos()" [value]="t.id_tipo">{{ t.nome_tipo }}</option>
+      </select>
+
+      <label>Data</label>
+      <input type="date" [(ngModel)]="filtroData" (change)="filtrar()">
+    </aside>
+
+    <section class="grid">
+      <div class="card" *ngFor="let inst of instalacionsFiltradas()">
+        <h3>{{ inst.nome }}</h3>
+        <p><strong>Tipo:</strong> {{ inst.tipo.nome_tipo }}</p>
+        <p><strong>Capacidade:</strong> {{ inst.capacidade }}</p>
+        <p><strong>Estado:</strong>
+          <span [class.disponible]="inst.disponible" [class.ocupado]="!inst.disponible">
+            {{ inst.disponible ? 'Libre' : 'Ocupada' }}
+          </span>
+        </p>
+        <button>Reservar</button>
+
+      </div>
+    </section>
+  </div>
+</div>

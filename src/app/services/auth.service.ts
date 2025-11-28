@@ -2,6 +2,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { lastValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 interface Usuario {
@@ -29,7 +30,7 @@ interface LoginData {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://reservas.test/api';
+  private apiUrl = 'http://reservas.test:8000/api';
 
   // ESTADO GLOBAL REACTIVO
   usuario = signal<Usuario | null>(null);
@@ -44,11 +45,10 @@ export class AuthService {
     this.loading.set(true);  // ← empieza el loading
     try {
 
-      // Primeiro hai que obter a cookie CSRF
-      await this.http.get(`${this.apiUrl}/sanctum/csrf-cookie`, {withCredentials: true}).toPromise()
-
       // Agora si facer o rexistro
-      await this.http.post(`${this.apiUrl}/register`, datos, {withCredentials: true}).toPromise();
+      const res: any = await lastValueFrom(
+        this.http.post(`${this.apiUrl}/register`, datos, {withCredentials: true})
+      );
 
       await Swal.fire({
         icon: 'success',
@@ -76,8 +76,17 @@ export class AuthService {
   async login(credenciais: LoginData) {
     this.loading.set(true);  // ← empieza
     try {
-      await this.http.get(`${this.apiUrl}/sanctum/csrf-cookie`, { withCredentials: true }).toPromise();
-      const res: any = await this.http.post(`${this.apiUrl}/login`, credenciais, { withCredentials: true }).toPromise();
+      const payload = {
+        correo: credenciais.correo,
+        password: credenciais.contrasinal
+      };
+
+      const res: any = await lastValueFrom(
+        this.http.post(`${this.apiUrl}/login`, payload)
+      );
+
+      // Gardamos o token en LocalStorage
+      localStorage.setItem('token', res.access_token);
 
       this.usuario.set(res.usuario);
       this.estaLogueado.set(true);
@@ -94,7 +103,9 @@ export class AuthService {
   async comprobarSesion() {
     this.loading.set(true);
     try {
-      const res: any = await this.http.get(`${this.apiUrl}/user`, { withCredentials: true }).toPromise();
+      const res: any = await lastValueFrom(
+        this.http.get(`${this.apiUrl}/user`, { withCredentials: true })
+      );
       this.usuario.set(res.usuario);
       this.estaLogueado.set(true);
     } catch {
@@ -108,7 +119,9 @@ export class AuthService {
   async logout() {
     this.loading.set(true);
     try {
-      await this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).toPromise();
+      await lastValueFrom(
+        this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true })
+      );
     } catch {}
     this.usuario.set(null);
     this.estaLogueado.set(false);
